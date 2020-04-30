@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+<title>ヘッダー | SUMOKAN</title>
+</head>
+<body>
+	<th:block th:fragment="pageHeader">
+		<link rel="stylesheet" th:href="@{/css/page_header.css}"
+			href="/css/page_header.css" />
+		<script src="http://code.jquery.com/jquery-3.4.1.min.js"></script>
+		<script
+			src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+		<link rel="stylesheet"
+			href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+		<script src="/js/util/stringUtil.js"
+			th:src="@{/js/util/stringUtil.js}"></script>
+		<script src="/js/util/validator.js" th:src="@{/js/util/validator.js}"></script>
+		<script src="/js/dialogConfig.js" th:src="@{/js/dialogConfig.js}"></script>
+		<script th:inline="javascript">
+		/*<![CDATA[*/
+	        $(() => {
+	        $('#loginError').dialog(dialogConfig.loginError);
+	        
+	        $('button#loginBtn').on('click',() => {
+	        	
+	        	let jsonString = {
+	        			'userName' : $('div.right_under input[name=userName]').val(),
+	        			'password' : $('div.right_under input[name=password]').val()
+	        	};
+	        	
+	        	$.ajax({
+	        		type: 'POST',
+	        		url: '/hope/auth/login',
+	        		data: JSON.stringify(jsonString),
+	        		contentType: 'application/json',
+	        		datatype: 'json',
+	        		scriptCharset: 'utf-8'
+	        	})
+	        	.then((result) => {
+	        		let user = JSON.parse(result);
+	        		if(isEmpty(user)){
+	        			
+	        			$('#hiddenUserName').val('');
+	        			$('#loginError').dialog('open');
+	        		}else{
+	        			$('#hiddenUserName').val(user['userName']);
+	        			login(user);
+	        		}
+	        	},() => {
+	        		alert('Error: ajax connection failed.');
+	        	});
+
+	        });
+	        	
+	        	$('button#logoutBtn').on('click', () => {
+	        	  	$.ajax({
+	                type: 'POST',
+	                url: '/hope/auth/logout',
+	                datatype: 'json',
+	                scriptCharset: 'utf-8'
+	              })
+	
+	              .then((result) => {
+	            	  $('#hiddenUserName').val('');
+	            	  logout();
+	        		 alert('ログアウトしました。');
+	                 location.replace('/hope/');
+	              },() => {
+		        		alert('Error: ajax connection failed.');
+		        	});
+	        	  });
+        	});
+	        
+	        	function login(user){
+	        		let userName = user['userName'];
+					$('#welcome').text(`ようこそ！ ${userName} さん`);
+	        		
+	        		if (isEmpty($('button#loginBtn').prop('class'))) {
+	        		      $('button#loginBtn').addClass('hidden');
+	        		      $('button#logoutBtn').removeClass('hidden');
+	        		    }
+	        		
+	        		    $('#mypage').removeClass('hidden');
+	        		    
+	        		    $('div.right_under input[name=userName]').val('');
+		        		$('div.right_under input[name=password]').val('');
+	        	}
+	        	
+	        	function logout() {
+	        		 $('#welcome').text(`ようこそ！ゲストさん`);
+		          		if (isEmpty($('button#logoutBtn').prop('class'))) {
+		      		      $('button#loginBtn').addClass('hidden');
+		      		      $('button#logoutBtn').removeClass('hidden');
+		      		    }
+		          		if (isEmpty($('#mypage').prop('class'))) {
+		          	      $('#mypage').addClass('hidden');
+		
+		          	    }
+		          		
+		          	  $('div.right_under input[name=userName]').val('');
+		        		$('div.right_under input[name=password]').val('');
+	        	}
+	        /*]]>*/
+	        </script>
+
+		<div class="header">
+			<div class="box">
+				<!--クリックするとトップページに遷移-->
+				<a id="imgLogo" href="/hope/"><img th:src="@{/img/logo.png}"></a>
+				<div class="right">
+					<span id="welcome"
+						th:text="'ようこそ！' + ${loginSession == null  || loginSession.getUserName() == null ? 'ゲスト さん' : loginSession.getUserName() + ' さん'}"></span>
+					<!--クリックすると新規ユーザー登録画面に遷移。-->
+					<span id="register"> <a href="/hope/user/">新規ユーザー登録はこちら</a>
+					</span>
+				</div>
+			</div>
+			
+			<div class="right_under">
+				<div id="loginForm">
+					<input type="text" name="userName" placeholder="ユーザーネーム" /> <input
+						type="password" name="password" placeholder="パスワード" /> <input
+						type="hidden" id="hiddenUserName" value="" />
+					<button id="loginBtn"
+						th:class="${loginSession == null || loginSession.getUserName() == null ? '' : 'hidden'}">ログイン</button>
+					<button id="logoutBtn"
+						th:class="${loginSession == null || loginSession.getUserName() == null ? 'hidden' : ''}">ログアウト</button>
+				</div>
+				<!--クリックするとカート/マイページに遷移-->
+				<ul id="mypageCart">
+					<li><a href="/hope/cart/">カート</a></li>
+					<li
+						th:class="${loginSession == null || loginSession.getUserName() == null ? 'hidden' : ''}"
+						id="mypage"><a href="/hope/mypage/">マイページ </a></li>
+				</ul>
+			</div>
+		</div>
+		<!-- Modal Dialog (ログインエラー) -->
+		<div th:insert="fragments/dialog_login_error::dialogLoginError"></div>
+	</th:block>
+</body>
+</html>
